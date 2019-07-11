@@ -1,0 +1,4 @@
+- ffmpeg安装路径如下：/usr/local/Cellar/ffmpeg/4.1.4
+- 将ffmpeg安装目录下share/ffmpeg/examples拷贝到工程目录下；
+- 修改cmakelist   add_executable(ffmpeg examples/encode_video.c)
+- 修改

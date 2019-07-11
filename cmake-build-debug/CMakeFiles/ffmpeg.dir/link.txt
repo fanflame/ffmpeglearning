@@ -1,0 +1,1 @@
+/usr/bin/g++  -g -Wl,-search_paths_first -Wl,-headerpad_max_install_names  CMakeFiles/ffmpeg.dir/main.cpp.o  -o ffmpeg  -L/Users/momo/Documents/CLionProjects/ffmpeg/./lib -Wl,-rpath,/Users/momo/Documents/CLionProjects/ffmpeg/./lib -lavcodec -lavdevice -lavfilter -lavformat -lavutil -lswresample -lswscale 
