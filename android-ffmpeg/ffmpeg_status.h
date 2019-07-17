@@ -1,5 +1,5 @@
 //
-// Created by MOMO on 2019-07-15.
+// Created by fanyiran on 2019-07-15.
 //
 
 #ifndef FFMPEGVIDEO_FFMPEG_STATUS_H

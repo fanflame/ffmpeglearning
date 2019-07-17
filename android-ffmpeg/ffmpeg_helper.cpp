@@ -1,5 +1,5 @@
 //
-// Created by MOMO on 2019-07-15.
+// Created by fanyiran on 2019-07-15.
 //
 
 #include <iostream>
@@ -29,7 +29,6 @@ void FFmpegHelper::init() {
         //TODO
         return;
     }
-
     codec = avcodec_find_encoder(formatContext->oformat->video_codec);
     if (!codec) {
         cout << "avcodec_find_encoder" << endl;
@@ -131,8 +130,11 @@ void FFmpegHelper::encode(uint8_t *data_y, uint8_t *data_u, uint8_t *data_v) {
     frame->pts = frame_count++;
 
     av_init_packet(&packet);
+    packet.data = NULL;
+    packet.buf = NULL;//Android使用时，需要设置这两个值为NULL
     int got_packet;
     ret = avcodec_encode_video2(codec_context, &packet, frame, &got_packet);
+//    ret =avcodec_send_frame(codec_context,frame);
     if (ret < 0) {
         fprintf(stderr, "Error encoding video frame: %s\n", av_err2str(ret));
         exit(1);
@@ -142,6 +144,7 @@ void FFmpegHelper::encode(uint8_t *data_y, uint8_t *data_u, uint8_t *data_v) {
         printf("ssssssss\n");
         av_packet_rescale_ts(&packet, codec_context->time_base, stream->time_base);
         packet.stream_index = stream->index;
+//        avcodec_receive_packet(formatContext,&packet);
         ret = av_interleaved_write_frame(formatContext, &packet);
     } else {
         printf("cccccccc\n");
