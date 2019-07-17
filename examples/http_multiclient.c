@@ -129,7 +129,7 @@ int main(int argc, char **argv)
         if ((ret = avio_accept(server, &client)) < 0)
             goto end;
         fprintf(stderr, "Accepted client, forking process.\n");
-        // XXX: Since we don't reap our children and don't ignore signals
+        // XXX: Since we don't reap our children and don't .gitignore signals
         //      this produces zombie processes.
         pid = fork();
         if (pid < 0) {

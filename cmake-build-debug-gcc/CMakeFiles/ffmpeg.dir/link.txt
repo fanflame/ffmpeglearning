@@ -1,1 +1,0 @@
-/usr/bin/gcc -g -Wl,-search_paths_first -Wl,-headerpad_max_install_names  CMakeFiles/ffmpeg.dir/examples/encode_video.c.o  -o ffmpeg  -L/usr/local/Cellar/ffmpeg/4.1.4/lib -Wl,-rpath,/usr/local/Cellar/ffmpeg/4.1.4/lib -lavcodec -lavdevice -lavfilter -lavformat -lavresample -lavutil -lpostproc -lswresample -lswscale 

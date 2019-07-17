@@ -1,0 +1,14 @@
+//
+// Created by MOMO on 2019-07-15.
+//
+
+#ifndef FFMPEGVIDEO_FFMPEG_STATUS_H
+#define FFMPEGVIDEO_FFMPEG_STATUS_H
+
+enum Status {
+    STATUS_UNKNOW = 0,
+    STATUS_INIT = 1,
+    STATUS_START = 2,
+    STATUS_RELEASE = 3,
+};
+#endif //FFMPEGVIDEO_FFMPEG_STATUS_H

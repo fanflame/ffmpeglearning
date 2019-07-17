@@ -37,150 +37,9 @@
 #include <libavutil/imgutils.h>
 #include "libavformat/avformat.h"
 
-const char *filename;
-enum AVCodecID codec_id;
-AVCodec *codec;
-AVCodecContext *c = NULL;
-int i, ret, x, y;
-FILE *f;
-AVFrame *frame;
-AVPacket *pkt;
-AVFormatContext *format_context;
-uint8_t endcode[] = {0, 0, 1, 0xb7};
-
-void encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt,
-            FILE *outfile);
-
-void close();
-
-void write_header();
-
-int main(int argc, char **argv) {
-    //创建一个空文件
-    filename = "/Users/momo/Documents/CLionProjects/ffmpeg/testvideos/encode.mp4";
-    codec_id = AV_CODEC_ID_MPEG1VIDEO;
-
-    /* find the mpeg1video encoder */
-    codec = avcodec_find_encoder(codec_id);
-    if (!codec) {
-        fprintf(stderr, "Codec '%s' not found\n", codec_id);
-        exit(1);
-    }
-
-    c = avcodec_alloc_context3(codec);
-    if (!c) {
-        fprintf(stderr, "Could not allocate video codec context\n");
-        exit(1);
-    }
-
-    pkt = av_packet_alloc();
-    if (!pkt)
-        exit(1);
-
-    format_context = avformat_alloc_context();
-    if (!format_context) {
-        fprintf(stderr,"format_context alloc failed\n");
-        exit(1);
-    }
-
-    format_context->video_codec = codec;
-//    format_context->video_codec_id = AV_CODEC_ID_MPEG4;
-
-    /* put sample parameters */
-    c->bit_rate = 400000;
-    /* resolution must be a multiple of two */
-    c->width = 352;
-    c->height = 288;
-    /* frames per second */
-    c->time_base = (AVRational) {1, 25};
-    c->framerate = (AVRational) {25, 1};
-
-    /* emit one intra frame every ten frames
-     * check frame pict_type before passing frame
-     * to encoder, if frame->pict_type is AV_PICTURE_TYPE_I
-     * then gop_size is ignored and the output of encoder
-     * will always be I frame irrespective to gop_size
-     */
-    c->gop_size = 10;
-    c->max_b_frames = 1;
-    c->pix_fmt = AV_PIX_FMT_YUV420P;
-
-    if (codec->id == AV_CODEC_ID_H264)
-        av_opt_set(c->priv_data, "preset", "slow", 0);
-
-    /* open it */
-    ret = avcodec_open2(c, codec, NULL);
-    if (ret < 0) {
-        fprintf(stderr, "Could not open codec: %s\n", av_err2str(ret));
-        exit(1);
-    }
-    f = fopen(filename, "wb");
-    if (!f) {
-        fprintf(stderr, "Could not open %s\n", filename);
-        exit(1);
-    }
-
-    frame = av_frame_alloc();
-    if (!frame) {
-        fprintf(stderr, "Could not allocate video frame\n");
-        exit(1);
-    }
-    frame->format = c->pix_fmt;
-    frame->width = c->width;
-    frame->height = c->height;
-
-    ret = av_frame_get_buffer(frame, 32);
-    if (ret < 0) {
-        fprintf(stderr, "Could not allocate the video frame data\n");
-        exit(1);
-    }
-
-    write_header();
-    /* encode 4 second of video */
-    int frameNum = 25 * 4;
-    for (i = 0; i < frameNum; i++) {
-        fflush(stdout);
-
-        /* make sure the frame data is writable */
-        ret = av_frame_make_writable(frame);
-        if (ret < 0)
-            exit(1);
-
-        /* prepare a dummy image */
-        /* Y */
-        for (y = 0; y < c->height; y++) {
-            for (x = 0; x < c->width; x++) {
-                frame->data[0][y * frame->linesize[0] + x] = x + y + i * 3;
-            }
-        }
-
-        /* Cb and Cr */
-        for (y = 0; y < c->height / 2; y++) {
-            for (x = 0; x < c->width / 2; x++) {
-                frame->data[1][y * frame->linesize[1] + x] = 128 + y + i * 2;
-                frame->data[2][y * frame->linesize[2] + x] = 64 + x + i * 5;
-            }
-        }
-
-        frame->pts = i;
-
-        /* encode the image */
-        encode(c, frame, pkt, f);
-    }
-
-    close();
-
-    return 0;
-}
-
-void write_header() {
-    AVDictionary* opt = NULL;
-    av_dict_set_int(&opt, "video_track_timescale", 25, 0);
-    avformat_write_header(format_context, &opt);
-}
-
-void encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt,
-            FILE *outfile) {
+static void encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt,
+                   FILE *outfile)
+{
     int ret;
 
     /* send the frame to the encoder */
@@ -208,7 +67,143 @@ void encode(AVCodecContext *enc_ctx, AVFrame *frame, AVPacket *pkt,
     }
 }
 
-void close() {
+int main(int argc, char **argv)
+{
+    const char *filename;
+    enum AVCodecID codec_name;
+    const AVCodec *codec;
+    AVCodecContext *c= NULL;
+    int i, ret, x, y;
+    FILE *f;
+    AVFrame *frame;
+    AVPacket *pkt;
+    AVFormatContext *formatContext;
+    uint8_t endcode[] = { 0, 0, 1, 0xb7 };
+    AVStream * stream;
+
+    filename = "/Users/momo/Documents/CLionProjects/ffmpeg/testvideos/encode.mp4";
+    codec_name = AV_CODEC_ID_MPEG4;
+
+    /* find the mpeg1video encoder */
+    ret = avformat_alloc_output_context2(&formatContext,NULL,NULL,filename);
+    if (ret < 0) {
+        printf(stderr, "avformat_alloc_output_context2 failed:%s", av_err2str(ret));
+        exit(1);
+    }
+    stream = avformat_new_stream(formatContext, NULL);
+    if (!stream) {
+        fprintf(stderr, "Could not allocate stream\n");
+        exit(1);
+    }
+    stream->id = formatContext->nb_streams - 1;
+
+    codec = avcodec_find_decoder(codec_name);
+    if (!codec) {
+        fprintf(stderr, "Codec '%s' not found\n", codec_name);
+        exit(1);
+    }
+
+    c = avcodec_alloc_context3(codec);
+    if (!c) {
+        fprintf(stderr, "Could not allocate video codec context\n");
+        exit(1);
+    }
+
+    pkt = av_packet_alloc();
+    if (!pkt)
+        exit(1);
+
+    /* put sample parameters */
+    c->bit_rate = 400000;
+    /* resolution must be a multiple of two */
+    c->width = 352;
+    c->height = 288;
+    /* frames per second */
+    c->time_base = (AVRational){1, 25};
+    c->framerate = (AVRational){25, 1};
+
+    /* emit one intra frame every ten frames
+     * check frame pict_type before passing frame
+     * to encoder, if frame->pict_type is AV_PICTURE_TYPE_I
+     * then gop_size is ignored and the output of encoder
+     * will always be I frame irrespective to gop_size
+     */
+    c->gop_size = 10;
+    c->max_b_frames = 1;
+    c->pix_fmt = AV_PIX_FMT_YUV420P;
+
+    if (codec->id == AV_CODEC_ID_H264)
+        av_opt_set(c->priv_data, "preset", "slow", 0);
+
+    /* open it */
+    ret = avcodec_open2(c, codec, NULL);
+    if (ret < 0) {
+        fprintf(stderr, "Could not open codec: %s\n", av_err2str(ret));
+        exit(1);
+    }
+
+    f = fopen(filename, "wb");
+    if (!f) {
+        fprintf(stderr, "Could not open %s\n", filename);
+        exit(1);
+    }
+
+    frame = av_frame_alloc();
+    if (!frame) {
+        fprintf(stderr, "Could not allocate video frame\n");
+        exit(1);
+    }
+    frame->format = c->pix_fmt;
+    frame->width  = c->width;
+    frame->height = c->height;
+
+    ret = av_frame_get_buffer(frame, 32);
+    if (ret < 0) {
+        fprintf(stderr, "Could not allocate the video frame data\n");
+        exit(1);
+    }
+
+    ret = avformat_write_header(formatContext, NULL);
+    if (ret < 0) {
+        printf("avformat_write_header failed:%s",av_err2str(ret));
+        exit(1);
+    }
+    /* encode 1 second of video */
+    for (i = 0; i < 25; i++) {
+        fflush(stdout);
+
+        /* make sure the frame data is writable */
+        ret = av_frame_make_writable(frame);
+        if (ret < 0)
+            exit(1);
+
+        /* prepare a dummy image */
+        /* Y */
+        for (y = 0; y < c->height; y++) {
+            for (x = 0; x < c->width; x++) {
+                frame->data[0][y * frame->linesize[0] + x] = x + y + i * 3;
+            }
+        }
+
+        /* Cb and Cr */
+        for (y = 0; y < c->height/2; y++) {
+            for (x = 0; x < c->width/2; x++) {
+                frame->data[1][y * frame->linesize[1] + x] = 128 + y + i * 2;
+                frame->data[2][y * frame->linesize[2] + x] = 64 + x + i * 5;
+            }
+        }
+
+        frame->pts = i;
+
+        /* encode the image */
+        encode(c, frame, pkt, f);
+    }
+
+    ret = av_write_trailer(formatContext);
+    if (ret < 0) {
+        printf("av_write_trailer failed:%s",av_err2str(ret));
+        exit(1);
+    }
     /* flush the encoder */
     encode(c, NULL, pkt, f);
 
@@ -218,6 +213,7 @@ void close() {
 
     avcodec_free_context(&c);
     av_frame_free(&frame);
-    avformat_free_context(format_context);
     av_packet_free(&pkt);
+
+    return 0;
 }
